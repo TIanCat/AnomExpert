@@ -9,3 +9,6 @@ Life-limiting congenital anomalies (LLCAs) require accurate prenatal diagnosis f
 ![替代文本](images/results.png)
 
 ## 4. Train
+```
+python train.py -data_dir /path/to/anonymous/dataset
+```
