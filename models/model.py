@@ -37,7 +37,7 @@ class AnomExpert(nn.Module):
         self.sinkhorn_iter = sinkhorn_iter
 
         # 1. Image encoder (ViT-small as default in paper)
-        self.vit_backbone = ViTEncoder('tiny')
+        self.vit_backbone = ViTEncoder('small')
         self.projection_head = nn.Linear(encoder_dim, self.D)  # g(·) in paper Eq.(1)
 
         # 2. Plane prototype learning components
@@ -160,6 +160,7 @@ class AnomExpert(nn.Module):
 
         # Similarity matrix S (paper Eq.(2))
         similarity_matrix = valid_emb_norm @ plane_protos_norm.t()  # (N, K)
+        similarity_mat = F.softmax(similarity_matrix / self.sinkhorn_eps, dim=-1)  # (N, K)
 
         # Sinkhorn assignment (paper Eq.(2))
         sim_exp = torch.exp(similarity_matrix / self.sinkhorn_eps).t()  # (K, N)
@@ -172,7 +173,7 @@ class AnomExpert(nn.Module):
 
         # Reconstruct full assignment matrix (include PAD positions)
         full_assignment_matrix = torch.zeros((B * L, self.K), device=batch_padded_emb.device)
-        full_assignment_matrix[flat_valid_mask] = assignment_code
+        full_assignment_matrix[flat_valid_mask] = assignment_code if self.training else similarity_mat.detach()
         assignment_matrix = full_assignment_matrix.view(B, L, self.K)
 
         return loss_proto, assignment_matrix
